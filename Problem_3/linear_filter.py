@@ -45,6 +45,7 @@ def corr(F, I):
     padded_input = np.pad(I, pad_width=((k_f, k_r), (l_f, l_r), (0, 0)), mode='constant')
     flat_filter = np.ravel(F)
 
+    assert (padded_input.shape[0] == k + I.shape[0] and padded_input.shape[1] == l + I.shape[1])
     print ("Vert padding: ", k_f)
     print ("Horiz padding: ", l_f)
 
