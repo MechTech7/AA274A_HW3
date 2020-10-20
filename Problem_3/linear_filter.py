@@ -16,7 +16,34 @@ def corr(F, I):
         G: An (m, n)-shaped ndarray containing the correlation of the filter with the image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    
+    k = F.shape[0]
+    l = F.shape[1]
+
+    k_f = k // 2
+    l_f = l // 2
+
+    k_r = k - k_f
+    l_r = l - l_f
+
+    padded_input = np.pad(I, pad_width=((k_f, k_r), (l_f, l_r), (0, 0)), mode='constant')
+    flat_filter = np.ravel(F)
+
+    #print (padded_input)
+    print(padded_input.shape)
+    
+    G = np.zeros_like(I)
+    for i in range(I.shape[0]):
+        for j in range(I.shape[1]):
+            p_i = i + k_f
+            p_j = j + l_f
+
+            img_val = np.ravel(padded_input[p_i - k_f:p_i + k_f+1, p_j - l_f:p_j + l_f+1])
+            pix_val = np.dot (img_val, flat_filter)
+            G[i, j] = pix_val
+    
+    return G
+    #raise NotImplementedError("Implement me!")
     ########## Code ends here ##########
 
 
@@ -30,7 +57,41 @@ def norm_cross_corr(F, I):
         G: An (m, n)-shaped ndarray containing the normalized cross-correlation of the filter with the image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    k = F.shape[0]
+    l = F.shape[1]
+
+    k_f = k // 2
+    l_f = l // 2
+
+    k_r = k - k_f
+    l_r = l - l_f
+
+    padded_input = np.pad(I, pad_width=((k_f, k_r), (l_f, l_r), (0, 0)), mode='constant')
+    #padded_input = np.pad(I, pad_width=((k_f, k_r), (l_f, l_r)), mode='constant')
+    flat_filter = np.ravel(F)
+
+    filt_norm = np.linalg.norm(flat_filter)
+    #print (padded_input)
+    print(padded_input.shape)
+    
+    G = np.zeros_like(I)
+    for i in range(I.shape[0]):
+        for j in range(I.shape[1]):
+            p_i = i + k_f
+            p_j = j + l_f
+
+            img_val = np.ravel(padded_input[p_i - k_f:p_i + k_f+1, p_j - l_f:p_j + l_f+1])
+            pix_val = np.dot (img_val, flat_filter)
+            
+            im_norm = np.linalg.norm(img_val)
+
+            pix_val /= (im_norm * filt_norm)
+            G[i, j] = pix_val
+
+
+    return G
+
+    #raise NotImplementedError("Implement me!")
     ########## Code ends here ##########
 
 
@@ -48,6 +109,8 @@ def show_save_corr_img(filename, image, template):
 def main():
     test_card = cv2.imread('test_card.png').astype(np.float32)
 
+    image = np.array([[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]]], dtype=np.float32)
+    
     filt1 = np.zeros((3, 3, 1))
     filt1[1, 1] = 1
 
@@ -75,11 +138,14 @@ def main():
 
     for idx, filt in enumerate(color_filters):
         start = time.time()
-        corr_img = corr(filt, test_card)
+        corr_img = norm_cross_corr(filt, test_card)
         stop = time.time()
         print 'Correlation function runtime:', stop - start, 's'
         show_save_corr_img("corr_img_filt%d.png" % idx, corr_img, filt)
-
+    
+    '''filtr = (0.0625) * np.array([[[1], [2], [1]], [[2], [4], [2]], [[1], [2], [1]]], dtype=np.float32)
+    corr_img = corr(filtr, image) 
+    print (corr_img)'''
 
 if __name__ == "__main__":
     main()

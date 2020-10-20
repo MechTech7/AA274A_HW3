@@ -17,7 +17,17 @@ def template_match(template, image, threshold=0.999):
         matches: A list of (top-left y, top-left x, bounding box height, bounding box width) tuples for each match's bounding box.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    res = cv2.matchTemplate(image, template, method=cv2.TM_CCORR_NORMED)
+    width = template.shape[1]
+    height = template.shape[0]
+
+    matches_idxs = np.argwhere(res >= threshold)
+    
+    op_list = []
+    for i in matches_idxs:
+        op_list.append((i[0], i[1], height, width))
+
+    return op_list
     ########## Code ends here ##########
 
 

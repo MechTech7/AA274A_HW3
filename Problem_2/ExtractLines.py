@@ -57,8 +57,8 @@ def ExtractLines(RangeData, params):
         N_lines = r_seg.size
 
         ### Merge Lines ###
-        if (N_lines > 1):
-            alpha_seg, r_seg, pointIdx_seg = MergeColinearNeigbors(theta, rho, alpha_seg, r_seg, pointIdx_seg, params)
+        #if (N_lines > 1):
+        #    alpha_seg, r_seg, pointIdx_seg = MergeColinearNeigbors(theta, rho, alpha_seg, r_seg, pointIdx_seg, params)
         r = np.append(r, r_seg)
         alpha = np.append(alpha, alpha_seg)
         pointIdx = np.vstack((pointIdx, pointIdx_seg))
@@ -92,6 +92,7 @@ def ExtractLines(RangeData, params):
     segend[:, (0, 2)] = segend[:, (0, 2)] + x_r
     segend[:, (1, 3)] = segend[:, (1, 3)] + y_r
 
+    print (segend)
     return alpha, r, segend, pointIdx
 
 
@@ -116,8 +117,25 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     HINT: Call FindSplit() to find an index to split at.
     '''
     ########## Code starts here ##########
+    alpha, r = FitLine(theta[startIdx:endIdx], rho[startIdx:endIdx])
 
+    if (endIdx - startIdx) + 1 < params["MIN_POINTS_PER_SEGMENT"]:
+        return alpha, r, np.array([[startIdx, endIdx]])
+
+    splitIdx = FindSplit(theta[startIdx:endIdx], rho[startIdx:endIdx], alpha, r, params)
+
+    if splitIdx < 0:
+        return alpha, r, np.array([[startIdx, endIdx]])
+    
+    alpha_1, r_1, idx_1 = SplitLinesRecursive(theta, rho, startIdx, startIdx + splitIdx, params)
+    alpha_2, r_2, idx_2 = SplitLinesRecursive(theta, rho, startIdx + splitIdx, endIdx, params)
+
+    idx = np.append(idx_1, idx_2, axis=0)
+    alpha = np.append(alpha_1, alpha_2)
+    r = np.append(r_1, r_2)
     ########## Code ends here ##########
+
+    
     return alpha, r, idx
 
 def FindSplit(theta, rho, alpha, r, params):
@@ -140,7 +158,24 @@ def FindSplit(theta, rho, alpha, r, params):
         splitIdx: idx at which to split line (return -1 if it cannot be split).
     '''
     ########## Code starts here ##########
+    vec_arr = np.multiply(rho, np.cos(theta - alpha) - r)
+    vec_arr = np.reshape(vec_arr, (-1, 1))
+    dist = np.linalg.norm(vec_arr, axis=1)
 
+    dist = np.where(dist < params["LINE_POINT_DIST_THRESHOLD"], -1, dist)
+
+    length = vec_arr.shape[0]
+    min_points = params["MIN_POINTS_PER_SEGMENT"] - 1
+    vec_arr = vec_arr[min_points:length - min_points]
+
+    if vec_arr.shape[0] < 2 * (min_points - 1):
+        return -1
+    
+    splitIdx = np.argmax(vec_arr)
+    if vec_arr[splitIdx] < 0:
+        return -1
+    
+    splitIdx += min_points
     ########## Code ends here ##########
     return splitIdx
 
@@ -157,11 +192,44 @@ def FitLine(theta, rho):
         r: 'r' of best fit for range data (1 number) (m).
     '''
     ########## Code starts here ##########
+    length = rho.shape[0]
+    ##alpha Calculation:
+    f_sum = np.sum(np.multiply(np.square(rho), np.sin(2*theta)), axis=0)
+    sec_sum = 0
+    '''for i in range(length):
+        sum_arr = np.multiply((rho[i] * rho), (np.cos(theta[i])*np.sin(theta)))
+        sum_over = np.sum(sum_arr, axis=0)
+        sec_sum += sum_over'''
+    for i in range(length):
+        for j in range(length):
+            sec_sum += rho[i] * rho[j] * np.cos(theta[i])*np.sin(theta[j])
+    
+    sec_sum *= -2.0/length
+    numerator = f_sum + sec_sum
 
+    d_sum = np.sum(np.multiply(np.square(rho), np.cos(2*theta)), axis=0)
+    d_sec_sum = 0
+    '''for i in range(length):
+        sum_arr = np.multiply((rho[i] * rho), np.cos(theta + theta[i]))
+        sum_over = np.sum(sum_arr, axis=0)
+        d_sec_sum += sum_over'''
+    for i in range(length):
+        for j in range(length):
+            d_sec_sum += rho[i] * rho[j] * np.cos(theta[i] + theta[j])
+    
+    d_sec_sum *= -1.0/length
+    denominator = d_sum + d_sec_sum
+
+    alpha = 0.5 * np.arctan2(numerator, denominator) + np.pi/2
+    r_array = np.multiply(rho, np.cos(theta - alpha))
+
+    r = 1/length * np.sum(r_array)
     ########## Code ends here ##########
     return alpha, r
 
+
 def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
+    #TODO: Debug this, its very faulty
     '''
     This function merges neighboring segments that are colinear and outputs a
     new set of line segments.
@@ -183,6 +251,35 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
           merge. If it can be split, do not merge.
     '''
     ########## Code starts here ##########
+    alphaOut = []
+    rOut = []
+    pointIdxOut = []
+
+    length = alpha.shape[0]
+
+    i = 0
+    while i < length - 1:
+        curr_idx = pointIdx[i]
+        next_idx = pointIdx[i+1]
+
+        t_alpha, t_r = FitLine(theta[curr_idx[0]:next_idx[1]], rho[curr_idx[0]:next_idx[1]])
+        s = FindSplit(theta[curr_idx[0]:next_idx[1]], rho[curr_idx[0]:next_idx[1]], t_alpha, t_r, params)
+
+        if s < 0:
+            alphaOut.append(t_alpha)
+            rOut.append(t_r)
+            pointIdxOut.append(np.array([curr_idx[0], next_idx[1]]))
+            i += 2
+        else:
+            alphaOut.append(alpha[i])
+            rOut.append(r[i])
+            pointIdxOut.append(pointIdx[i])
+            i+=1
+
+    alphaOut = np.array(alphaOut)
+    rOut = np.array(rOut)
+    pointIdxOut = np.array(pointIdxOut)
+
 
     ########## Code ends here ##########
     return alphaOut, rOut, pointIdxOut
@@ -227,6 +324,11 @@ def main():
               'LINE_POINT_DIST_THRESHOLD': LINE_POINT_DIST_THRESHOLD,
               'MIN_POINTS_PER_SEGMENT': MIN_POINTS_PER_SEGMENT,
               'MAX_P2P_DIST': MAX_P2P_DIST}
+
+    #theta = RangeData[2]
+    #rho = RangeData[3]
+
+    #alpha, r = FitLine(theta, rho)
 
     alpha, r, segend, pointIdx = ExtractLines(RangeData, params)
 
