@@ -5,7 +5,23 @@ import time
 import cv2
 import matplotlib.pyplot as plt
 
-
+'''Error Output
+('Iteration: ', 1)
+('Vert padding: ', 1)
+('Horiz padding: ', 100)
+(579, 968, 3)
+('F_shape: ', (3, 200, 3))
+('G_shape: ', (576, 768))
+(3, 201, 3)
+Traceback (most recent call last):
+  File "linear_filter.py", line 155, in <module>
+    main()
+  File "linear_filter.py", line 149, in main
+    corr_img = corr(filt, test_card)
+  File "linear_filter.py", line 49, in corr
+    pix_val = np.dot (img_val, flat_filter)
+ValueError: shapes (1809,) and (1800,) not aligned: 1809 (dim 0) != 1800 (dim 0)
+'''
 def corr(F, I):
     """
     Input
@@ -29,16 +45,23 @@ def corr(F, I):
     padded_input = np.pad(I, pad_width=((k_f, k_r), (l_f, l_r), (0, 0)), mode='constant')
     flat_filter = np.ravel(F)
 
+    print ("Vert padding: ", k_f)
+    print ("Horiz padding: ", l_f)
+
     #print (padded_input)
     print(padded_input.shape)
     
     G = np.zeros((I.shape[0], I.shape[1]))
+    print ("F_shape: ", F.shape)
+    print ("G_shape: ", G.shape)
     for i in range(I.shape[0]):
         for j in range(I.shape[1]):
             p_i = i + k_f
             p_j = j + l_f
 
-            img_val = np.ravel(padded_input[p_i - k_f:p_i + k_f+1, p_j - l_f:p_j + l_f+1])
+            image_region = padded_input[p_i - k_f:p_i + k_f+1, p_j - l_f:p_j + l_f+1]
+            print (image_region.shape)
+            img_val = np.ravel(image_region)
             pix_val = np.dot (img_val, flat_filter)
             G[i, j] = pix_val
     
@@ -137,8 +160,9 @@ def main():
         color_filters.append(np.concatenate([filt, filt, filt], axis=-1))
 
     for idx, filt in enumerate(color_filters):
+        print ("Iteration: ", idx)
         start = time.time()
-        corr_img = norm_cross_corr(filt, test_card)
+        corr_img = corr(filt, test_card)
         stop = time.time()
         print 'Correlation function runtime:', stop - start, 's'
         show_save_corr_img("corr_img_filt%d.png" % idx, corr_img, filt)
