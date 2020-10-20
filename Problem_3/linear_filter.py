@@ -32,7 +32,7 @@ def corr(F, I):
     #print (padded_input)
     print(padded_input.shape)
     
-    G = np.zeros_like(I)
+    G = np.zeros((I.shape[0], I.shape[1]))
     for i in range(I.shape[0]):
         for j in range(I.shape[1]):
             p_i = i + k_f
@@ -74,7 +74,7 @@ def norm_cross_corr(F, I):
     #print (padded_input)
     print(padded_input.shape)
     
-    G = np.zeros_like(I)
+    G = np.zeros_like((I.shape[0], I.shape[1]))
     for i in range(I.shape[0]):
         for j in range(I.shape[1]):
             p_i = i + k_f
@@ -142,10 +142,6 @@ def main():
         stop = time.time()
         print 'Correlation function runtime:', stop - start, 's'
         show_save_corr_img("corr_img_filt%d.png" % idx, corr_img, filt)
-    
-    '''filtr = (0.0625) * np.array([[[1], [2], [1]], [[2], [4], [2]], [[1], [2], [1]]], dtype=np.float32)
-    corr_img = corr(filtr, image) 
-    print (corr_img)'''
 
 if __name__ == "__main__":
     main()
