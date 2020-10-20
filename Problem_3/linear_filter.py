@@ -61,6 +61,9 @@ def corr(F, I):
 
             image_region = padded_input[p_i - k_f:p_i + k_f+1, p_j - l_f:p_j + l_f+1]
             print (image_region.shape)
+            
+            print (image_region[0, 0])
+            print (image_region[0, -1])
             img_val = np.ravel(image_region)
             pix_val = np.dot (img_val, flat_filter)
             G[i, j] = pix_val
