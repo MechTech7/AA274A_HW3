@@ -60,11 +60,11 @@ def corr(F, I):
             p_i = i + k_f
             p_j = j + l_f
 
-            image_region = padded_input[p_i - k_f:p_i + k_f+1, p_j - l_f:p_j + l_f+1]
-            print (image_region.shape)
+            image_region = padded_input[i:i + k, j:j + l]
+            #print (image_region.shape)
             
-            print (image_region[0, 0])
-            print (image_region[0, -1])
+            #print (image_region[0, 0])
+            #print (image_region[0, -1])
             img_val = np.ravel(image_region)
             pix_val = np.dot (img_val, flat_filter)
             G[i, j] = pix_val
@@ -101,13 +101,18 @@ def norm_cross_corr(F, I):
     #print (padded_input)
     print(padded_input.shape)
     
-    G = np.zeros_like((I.shape[0], I.shape[1]))
+    G = np.zeros((I.shape[0], I.shape[1]))
     for i in range(I.shape[0]):
         for j in range(I.shape[1]):
             p_i = i + k_f
             p_j = j + l_f
 
-            img_val = np.ravel(padded_input[p_i - k_f:p_i + k_f+1, p_j - l_f:p_j + l_f+1])
+            image_region = padded_input[i:i + k, j:j + l]
+            #print (image_region.shape)
+            
+            #print (image_region[0, 0])
+            #print (image_region[0, -1])
+            img_val = np.ravel(image_region)
             pix_val = np.dot (img_val, flat_filter)
             
             im_norm = np.linalg.norm(img_val)
@@ -155,6 +160,8 @@ def main():
                               [1, 4, 7, 4, 1]])
     filt4 = np.expand_dims(filt4, -1)
 
+    filt5 = (1./16.)*np.array([[-1,0,1], [-1,0,1], [-1,0,1]])
+    filt5 = np.expand_dims(filt5, -1)
     grayscale_filters = [filt1, filt2, filt3, filt4]
 
     color_filters = list()

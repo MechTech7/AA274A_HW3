@@ -169,7 +169,6 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     s = FindSplit(theta_line, rho_line, alpha, r, params)
 
     if s == -1:
-        print ("Cutoff because of me")
         return np.array([alpha]), np.array([r]), np.array([[startIdx, endIdx]])
 
     alpha_1, r_1, idx_1 = SplitLinesRecursive(theta, rho, startIdx, startIdx + s, params)
@@ -287,36 +286,44 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
     rOut = []
     pointIdxOut = []
 
+    print theta.shape
+    print pointIdx.shape
+
     length = alpha.shape[0]
+    index = 0
 
-    i = 0
-    while i < length - 1:
-        curr_idx = pointIdx[i]
-        next_idx = pointIdx[i+1]
+    while index < length - 1:
+        curr_point = pointIdx[index]
+        next_point = pointIdx[index + 1]
 
-        theta_line = theta[curr_idx[0]:next_idx[1]]
-        rho_line = rho[curr_idx[0]:next_idx[1]]
+        print ("Length: ", next_point[1] - curr_point[0])
 
-        t_alpha, t_r = FitLine(theta_line, rho_line)
-        s = FindSplit(theta_line, rho_line, t_alpha, t_r, params)
+        theta_line = theta[curr_point[0]:next_point[1]]
+        rho_line = rho[curr_point[0]:next_point[1]]
 
+        #print(theta_line.shape)
+        l_alpha, l_r = FitLine(theta_line, rho_line)
+
+        #print(l_alpha.shape)
+        s = FindSplit(theta_line, rho_line, l_alpha, l_r, params)
+        print (s)
         if s < 0:
-            alphaOut.append(t_alpha)
-            rOut.append(t_r)
-            pointIdxOut.append(np.array([curr_idx[0], next_idx[1]]))
-            i += 2
+            alphaOut.append(l_alpha)
+            rOut.append(l_r)
+            pointIdxOut.append(np.array([curr_point[0], next_point[1]]))
+            index += 2
         else:
-            alphaOut.append(alpha[i])
-            rOut.append(r[i])
-            pointIdxOut.append(pointIdx[i])
-            i+=1
+            alphaOut.append(alpha[index])
+            rOut.append(r[index])
+            pointIdxOut.append(np.array([curr_point[0], curr_point[1]]))
+            index += 1
+
 
     alphaOut = np.array(alphaOut)
     rOut = np.array(rOut)
     pointIdxOut = np.array(pointIdxOut)
-
-
     ########## Code ends here ##########
+
     return alphaOut, rOut, pointIdxOut
 
 
