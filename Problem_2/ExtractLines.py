@@ -257,75 +257,47 @@ def FitLine(theta, rho):
     ########## Code ends here ##########
     return alpha, r
 
-
-
 def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
-    #TODO: Debug this, its very faulty
-    '''
-    This function merges neighboring segments that are colinear and outputs a
-    new set of line segments.
+    alphaOut = np.array([])
+    rOut = np.array([])
+    pointIdxOut = np.empty((0, 2))
 
-    Inputs:
-        theta: (1D) np array of angle 'theta' from data (rads).
-        rho: (1D) np array of distance 'rho' from data (m).
-        alpha: (1D) np array of 'alpha' for each fitted line (rads).
-        r: (1D) np array of 'r' for each fitted line (m).
-        pointIdx: (N_lines,2) segment's first and last point indices.
-        params: dictionary of parameters.
-    Outputs:
-        alphaOut: output 'alpha' of merged lines (rads).
-        rOut: output 'r' of merged lines (m).
-        pointIdxOut: output start and end indices of merged line segments.
+    currLine = 0
+    curr_points = pointIdx[currLine]
+    
+    prev_alpha = alpha[currLine]
+    prev_r = r[currLine]
 
-    HINT: loop through line segments and try to fit a line to data points from
-          two adjacent segments. If this line cannot be split, then accept the
-          merge. If it can be split, do not merge.
-    '''
-    ########## Code starts here ##########
-    alphaOut = []
-    rOut = []
-    pointIdxOut = []
+    prevEndIdx = curr_points[1]
 
-    print theta.shape
-    print pointIdx.shape
+    for nextLine in range(1, alpha.shape[0]):
+        next_points = pointIdx[nextLine]
 
-    length = alpha.shape[0]
-    index = 0
+        theta_line = theta[curr_points[0]:next_points[1]]
+        rho_line = rho[curr_points[0]:next_points[1]]
 
-    while index < length - 1:
-        curr_point = pointIdx[index]
-        next_point = pointIdx[index + 1]
-
-        print ("Length: ", next_point[1] - curr_point[0])
-
-        theta_line = theta[curr_point[0]:next_point[1]]
-        rho_line = rho[curr_point[0]:next_point[1]]
-
-        #print(theta_line.shape)
         l_alpha, l_r = FitLine(theta_line, rho_line)
-
-        #print(l_alpha.shape)
         s = FindSplit(theta_line, rho_line, l_alpha, l_r, params)
-        print (s)
-        if s < 0:
-            alphaOut.append(l_alpha)
-            rOut.append(l_r)
-            pointIdxOut.append(np.array([curr_point[0], next_point[1]]))
-            index += 2
-        else:
-            alphaOut.append(alpha[index])
-            rOut.append(r[index])
-            pointIdxOut.append(np.array([curr_point[0], curr_point[1]]))
-            index += 1
 
+        if s < 0: #Mergable
+            prev_alpha = l_alpha
+            prev_r = l_r
+        else:#splittable
+            alphaOut = np.append(alphaOut, prev_alpha)
+            rOut = np.append(rOut, prev_r)
+            pointIdxOut = np.vstack((pointIdxOut, np.array([curr_points[0], prevEndIdx])))
 
-    alphaOut = np.array(alphaOut)
-    rOut = np.array(rOut)
-    pointIdxOut = np.array(pointIdxOut)
-    ########## Code ends here ##########
+            prev_alpha = alpha[nextLine]
+            prev_r = r[nextLine]
+
+            curr_points = next_points
+        prevEndIdx = next_points[1]
+
+    alphaOut = np.append(alphaOut, prev_alpha)
+    rOut = np.append(rOut, prev_r)
+    pointIdxOut = np.vstack((pointIdxOut, np.array([curr_points[0], prevEndIdx])))
 
     return alphaOut, rOut, pointIdxOut
-
 
 #----------------------------------
 # ImportRangeData
